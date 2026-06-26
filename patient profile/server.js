@@ -190,7 +190,15 @@ app.post('/api/appointments', async (req, res) => {
 app.get('/api/appointments', async (req, res) => {
   try {
     const [rows] = await pool.execute(
-      `SELECT a.appointment_id as id, a.patient_id, a.appointment_date, a.appointment_type, a.appointment_status, a.reason_for_visit as reason,
+      `SELECT a.appointment_id as id,
+              a.patient_id,
+              a.appointment_date,
+              a.appointment_type,
+              a.appointment_status,
+              CASE
+                WHEN a.appointment_status = 'cancelled' THEN a.cancel_reason
+                ELSE a.reason_for_visit
+              END as reason,
               p.first_name, p.last_name
        FROM appointments a
        JOIN patients p ON p.patient_id = a.patient_id
