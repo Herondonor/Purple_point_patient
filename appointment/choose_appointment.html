@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Appointment Option</title>
+</head>
+<body>
+
+    <form id="choose-appointment-form">
+        <label for="appointment-option">Choose an option:</label>
+        <select name="appointment-option" id="appointment-option" required>
+            <option value="" disabled selected hidden>Select an Option</option>
+            <option value="add-appointment">Add Appointment</option>
+            <option value="view-appointments">View Appointments</option>
+            <option value="cancel-appointment">Cancel Appointment</option>
+        </select>
+        <button type="submit">Proceed</button>
+    </form>
+
+    <div id="choose-appointment-result" style="margin-top:16px;"></div>
+
+    <script src="redirect.js"></script>
+</body>
+</html>

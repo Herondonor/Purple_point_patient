@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cancel Appointment</title>
+</head>
+<body>
+    
+    <form id="cancel-appointment-form">
+        <label for="appointment-id">Appointment ID:</label>
+        <input type="text" name="appointment_id" id="appointment-id" placeholder="Enter Appointment ID" required>
+        
+        <label for="cancel-reason">Reason for Cancellation:</label>
+        <textarea name="cancel_reason" id="cancel-reason" placeholder="Enter reason for cancellation" required></textarea>
+        
+        <button type="submit">Cancel Appointment</button>
+    </form>
+
+    <div id="cancel-appointment-result" style="margin-top:16px;"></div>
+
+    <script src="cancel_appointment.js"></script>
+</body>
+</html>

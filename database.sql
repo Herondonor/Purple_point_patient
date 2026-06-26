@@ -2,7 +2,7 @@ CREATE DATABASE dental_clinic;
 USE dental_clinic;
 
 CREATE TABLE patients (
-  id INT AUTO_INCREMENT PRIMARY KEY,
+  patient_id INT AUTO_INCREMENT PRIMARY KEY,
   first_name VARCHAR(100) NOT NULL,
   last_name VARCHAR(100) NOT NULL,
   date_of_birth DATE NOT NULL,
@@ -19,13 +19,16 @@ CREATE TABLE patients (
 );
 
 CREATE TABLE appointments (
-  id INT AUTO_INCREMENT PRIMARY KEY,
+  appointment_id INT AUTO_INCREMENT PRIMARY KEY,
   patient_id INT NOT NULL,
-  appt_date DATE NOT NULL,
-  appt_time TIME NOT NULL,
-  reason VARCHAR(255),
-  status ENUM('scheduled', 'completed', 'cancelled') DEFAULT 'scheduled',
-  FOREIGN KEY (patient_id) REFERENCES patients(id) ON DELETE CASCADE
+  appointment_date DATETIME NOT NULL,
+  appointment_type ENUM('consultation', 'cleaning', 'filling', 'extraction', 'other') NOT NULL,
+  appointment_status enum('scheduled', 'completed', 'cancelled') DEFAULT 'scheduled',
+  reason_for_visit VARCHAR(255),
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  cancelled_at TIMESTAMP NULL DEFAULT NULL,
+  cancel_reason TEXT DEFAULT NULL,
+  FOREIGN KEY (patient_id) REFERENCES patients(patient_id) ON DELETE CASCADE
 );
 
 CREATE TABLE dental_records (
@@ -37,5 +40,5 @@ CREATE TABLE dental_records (
   treatment TEXT,
   notes TEXT,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  FOREIGN KEY (patient_id) REFERENCES patients(id) ON DELETE CASCADE
+  FOREIGN KEY (patient_id) REFERENCES patients(patient_id) ON DELETE CASCADE
 );

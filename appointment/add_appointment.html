@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Add Appointment</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <form id="add-appointment-form">
+    <input name="patient_id" type="number" placeholder="Patient ID" required>
+    <input name="appointment_date" type="datetime-local" placeholder="Appointment Date" required>
+    <select name="appointment_type" required>
+      <option value="">Select Appointment Type</option>
+      <option value="consultation">Consultation</option>
+      <option value="follow-up">Cleaning</option>
+      <option value="emergency">Filling</option>
+      <option value="extraction">Extraction</option>
+      <option value="other">Other</option>
+    </select>
+    <select name="appointment_status" required>
+      <option value="">Select Appointment Status</option>
+      <option value="scheduled">Scheduled</option>
+      <option value="completed">Completed</option>
+      <option value="cancelled">Cancelled</option>
+    </select>
+    <textarea name="reason_for_visit" placeholder="Reason for Visit"></textarea>
+    <button type="submit">Save Appointment</button>
+  </form>
+
+  <div id="add-appointment-result" style="margin-top:16px;"></div>
+
+  <script src="add_appointment.js"></script>
+</body>
+</html>
