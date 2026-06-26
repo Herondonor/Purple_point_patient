@@ -202,7 +202,7 @@ app.get('/api/appointments', async (req, res) => {
               p.first_name, p.last_name
        FROM appointments a
        JOIN patients p ON p.patient_id = a.patient_id
-       ORDER BY a.appointment_id DESC`
+       ORDER BY a.appointment_id ASC`
     );
     return res.json(rows);
   } catch (err) {
