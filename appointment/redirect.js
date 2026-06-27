@@ -31,12 +31,18 @@ function formatAppointmentLabel(appointment) {
   return time ? `${namePart} — ${time}` : namePart;
 }
 
-function renderAppointmentsCalendar(appointments, container) {
+function renderAppointmentsCalendar(appointments, container, baseDate = new Date()) {
+  // container state: { base: Date } where base is the month being shown
+  if (!container.__apptsCalendarState) container.__apptsCalendarState = { base: new Date() };
+  container.__apptsCalendarState.base = baseDate;
+
   container.innerHTML = '';
 
-  const now = new Date();
-  const currentYear = now.getFullYear();
-  const currentMonth = now.getMonth(); // 0-11
+
+
+  const currentYear = baseDate.getFullYear();
+  const currentMonth = baseDate.getMonth(); // 0-11
+
 
   const filtered = (appointments || []).filter((a) => {
     const parts = parseDateParts(a.appointment_date);
@@ -53,13 +59,18 @@ function renderAppointmentsCalendar(appointments, container) {
     byDay.get(day).push(a);
   });
 
-  const monthLabel = now.toLocaleDateString([], { month: 'long', year: 'numeric' });
+  const monthLabel = baseDate.toLocaleDateString([], { month: 'long', year: 'numeric' });
+
+
 
   container.innerHTML = `
     <div class="calendar-wrap" style="margin-top:8px;">
       <div class="calendar-nav" style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+        <button type="button" style="border:1px solid #ddd;background:#fff;border-radius:6px;padding:6px 10px;cursor:pointer;" onclick="window.__apptsCalendarChangeMonth && window.__apptsCalendarChangeMonth(-1)">&#8249;</button>
         <div style="font-weight:700;">${monthLabel}</div>
+        <button type="button" style="border:1px solid #ddd;background:#fff;border-radius:6px;padding:6px 10px;cursor:pointer;" onclick="window.__apptsCalendarChangeMonth && window.__apptsCalendarChangeMonth(1)">&#8250;</button>
       </div>
+
 
       <div class="calendar-grid" style="display:grid;grid-template-columns:repeat(7,1fr);gap:0;" id="cal-headers" aria-hidden="true">
         <div style="padding:8px;font-size:12px;font-weight:700;color:#666;border-bottom:1px solid #eee;">Sun</div>
@@ -80,6 +91,7 @@ function renderAppointmentsCalendar(appointments, container) {
   const calBody = container.querySelector('#cal-body');
 
   const firstDay = new Date(currentYear, currentMonth, 1);
+
   const startWeekday = firstDay.getDay(); // 0..6
 
   const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
@@ -129,9 +141,19 @@ function renderAppointmentsCalendar(appointments, container) {
           tag.style.whiteSpace = 'nowrap';
           tag.style.overflow = 'hidden';
           tag.style.textOverflow = 'ellipsis';
-          tag.textContent = formatAppointmentLabel(a);
+
+          const timeLabel = parseDateParts(a.appointment_date)?.timeLabel || '';
+          const dateLabel = a.appointment_date ? new Date(a.appointment_date).toLocaleDateString([], { month: 'short', day: 'numeric' }) : '';
+          const status = a.appointment_status || '';
+          const timeNoSeconds = timeLabel ? timeLabel.replace(/:\d\d\b/, '') : '';
+          const meta = `${formatAppointmentLabel(a)} — ${status}`;
+
+
+          tag.innerHTML = meta;
+
           list.appendChild(tag);
         });
+
 
       if (items.length > 4) {
         const more = document.createElement('div');
@@ -148,6 +170,7 @@ function renderAppointmentsCalendar(appointments, container) {
       list.appendChild(empty);
     }
 
+
     cell.appendChild(top);
     cell.appendChild(list);
     calBody.appendChild(cell);
@@ -155,7 +178,22 @@ function renderAppointmentsCalendar(appointments, container) {
 }
 
 
+window.__apptsCalendarChangeMonth = function (delta) {
+  const resultBox = document.getElementById('choose-appointment-result');
+  if (!resultBox) return;
+  const state = resultBox.__apptsCalendarState;
+  const base = state?.base ? new Date(state.base) : new Date();
+  base.setMonth(base.getMonth() + delta);
+
+  loadAppointments()
+    .then((appointments) => renderAppointmentsCalendar(appointments, resultBox, base))
+    .catch((err) => {
+      resultBox.innerHTML = `<h2>Database Error</h2><p>${err?.message || 'Unable to load appointments.'}</p>`;
+    });
+};
+
 async function handleChooseAppointmentSubmit(event) {
+
   event.preventDefault();
 
   const form = event.target;
