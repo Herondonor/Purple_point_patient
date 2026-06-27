@@ -7,60 +7,153 @@
   return response.json();
 }
 
-function formatDate(value) {
-  if (!value) return '';
-  try {
-    const date = new Date(value);
-    const dateStr = date.toLocaleDateString();
-    const timeStr = date.toLocaleTimeString();
-    return `${dateStr} ${timeStr}`;
-  } catch {
-    return value;
-  }
+function parseDateParts(value) {
+  if (!value) return null;
+  const d = new Date(value);
+  if (Number.isNaN(d.getTime())) return null;
+
+  const year = d.getFullYear();
+  const month = d.getMonth(); // 0-11
+  const day = d.getDate();
+
+  const timeLabel = d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+
+  return { year, month, day, timeLabel };
 }
 
-function renderAppointments(appointments, container) {
+function formatAppointmentLabel(appointment) {
+  const first = (appointment.first_name || '').trim();
+  const last = (appointment.last_name || '').trim();
+  const initials = first ? `${first[0].toUpperCase()}.` : '';
+  const time = parseDateParts(appointment.appointment_date)?.timeLabel || '';
+
+  const namePart = `${initials} ${last}`.trim();
+  return time ? `${namePart} — ${time}` : namePart;
+}
+
+function renderAppointmentsCalendar(appointments, container) {
   container.innerHTML = '';
 
-  if (!appointments.length) {
-    container.innerHTML = '<p>No saved appointments found.</p>';
-    return;
-  }
+  const now = new Date();
+  const currentYear = now.getFullYear();
+  const currentMonth = now.getMonth(); // 0-11
 
-  const table = document.createElement('table');
-  table.style.borderCollapse = 'collapse';
-  table.style.width = '100%';
-  table.innerHTML = `
-    <thead>
-      <tr>
-        <th style="border:1px solid #ccc;padding:8px;text-align:left;">ID</th>
-        <th style="border:1px solid #ccc;padding:8px;text-align:left;">Patient</th>
-        <th style="border:1px solid #ccc;padding:8px;text-align:left;">Date & Time</th>
-        <th style="border:1px solid #ccc;padding:8px;text-align:left;">Type</th>
-        <th style="border:1px solid #ccc;padding:8px;text-align:left;">Status</th>
-        <th style="border:1px solid #ccc;padding:8px;text-align:left;">Reason</th>
-      </tr>
-    </thead>
-    <tbody></tbody>
-  `;
-
-  const tbody = table.querySelector('tbody');
-
-  appointments.forEach((appointment) => {
-    const row = document.createElement('tr');
-    row.innerHTML = `
-      <td style="border:1px solid #ccc;padding:8px;">${appointment.id}</td>
-      <td style="border:1px solid #ccc;padding:8px;">${appointment.first_name} ${appointment.last_name}</td>
-      <td style="border:1px solid #ccc;padding:8px;">${formatDate(appointment.appointment_date)}</td>
-      <td style="border:1px solid #ccc;padding:8px;">${appointment.appointment_type || '—'}</td>
-      <td style="border:1px solid #ccc;padding:8px;">${appointment.appointment_status}</td>
-      <td style="border:1px solid #ccc;padding:8px;">${appointment.reason || '—'}</td>
-    `;
-    tbody.appendChild(row);
+  const filtered = (appointments || []).filter((a) => {
+    const parts = parseDateParts(a.appointment_date);
+    return parts && parts.year === currentYear && parts.month === currentMonth;
   });
 
-  container.appendChild(table);
+  // Group by day (1..31)
+  const byDay = new Map();
+  filtered.forEach((a) => {
+    const parts = parseDateParts(a.appointment_date);
+    if (!parts) return;
+    const day = parts.day;
+    if (!byDay.has(day)) byDay.set(day, []);
+    byDay.get(day).push(a);
+  });
+
+  const monthLabel = now.toLocaleDateString([], { month: 'long', year: 'numeric' });
+
+  container.innerHTML = `
+    <div class="calendar-wrap" style="margin-top:8px;">
+      <div class="calendar-nav" style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+        <div style="font-weight:700;">${monthLabel}</div>
+      </div>
+
+      <div class="calendar-grid" style="display:grid;grid-template-columns:repeat(7,1fr);gap:0;" id="cal-headers" aria-hidden="true">
+        <div style="padding:8px;font-size:12px;font-weight:700;color:#666;border-bottom:1px solid #eee;">Sun</div>
+        <div style="padding:8px;font-size:12px;font-weight:700;color:#666;border-bottom:1px solid #eee;">Mon</div>
+        <div style="padding:8px;font-size:12px;font-weight:700;color:#666;border-bottom:1px solid #eee;">Tue</div>
+        <div style="padding:8px;font-size:12px;font-weight:700;color:#666;border-bottom:1px solid #eee;">Wed</div>
+        <div style="padding:8px;font-size:12px;font-weight:700;color:#666;border-bottom:1px solid #eee;">Thu</div>
+        <div style="padding:8px;font-size:12px;font-weight:700;color:#666;border-bottom:1px solid #eee;">Fri</div>
+        <div style="padding:8px;font-size:12px;font-weight:700;color:#666;border-bottom:1px solid #eee;">Sat</div>
+      </div>
+
+      <div class="calendar-grid" style="display:grid;grid-template-columns:repeat(7,1fr);gap:0;" id="cal-body"></div>
+
+      ${!appointments.length ? '<p style="margin-top:12px;">No saved appointments found.</p>' : ''}
+    </div>
+  `;
+
+  const calBody = container.querySelector('#cal-body');
+
+  const firstDay = new Date(currentYear, currentMonth, 1);
+  const startWeekday = firstDay.getDay(); // 0..6
+
+  const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
+
+  for (let i = 0; i < startWeekday; i++) {
+    const empty = document.createElement('div');
+    empty.style.minHeight = '92px';
+    empty.style.border = '1px solid #eee';
+    empty.style.background = '#fafafa';
+    calBody.appendChild(empty);
+  }
+
+  for (let day = 1; day <= daysInMonth; day++) {
+    const cell = document.createElement('div');
+    cell.style.minHeight = '92px';
+    cell.style.border = '1px solid #eee';
+    cell.style.padding = '8px';
+    cell.style.boxSizing = 'border-box';
+    cell.style.display = 'flex';
+    cell.style.flexDirection = 'column';
+    cell.style.overflow = 'hidden';
+
+    const top = document.createElement('div');
+    top.style.fontWeight = '800';
+    top.style.fontSize = '12px';
+    top.style.marginBottom = '6px';
+    top.textContent = day;
+
+    const list = document.createElement('div');
+    list.style.display = 'flex';
+    list.style.flexDirection = 'column';
+    list.style.gap = '6px';
+
+    const items = byDay.get(day) || [];
+    if (items.length) {
+      items
+        .sort((a, b) => {
+          const da = new Date(a.appointment_date).getTime();
+          const db = new Date(b.appointment_date).getTime();
+          return da - db;
+        })
+        .slice(0, 4)
+        .forEach((a) => {
+          const tag = document.createElement('div');
+          tag.style.fontSize = '12px';
+          tag.style.lineHeight = '1.2';
+          tag.style.whiteSpace = 'nowrap';
+          tag.style.overflow = 'hidden';
+          tag.style.textOverflow = 'ellipsis';
+          tag.textContent = formatAppointmentLabel(a);
+          list.appendChild(tag);
+        });
+
+      if (items.length > 4) {
+        const more = document.createElement('div');
+        more.style.fontSize = '12px';
+        more.style.color = '#666';
+        more.textContent = `+${items.length - 4} more`;
+        list.appendChild(more);
+      }
+    } else {
+      const empty = document.createElement('div');
+      empty.style.fontSize = '12px';
+      empty.style.color = '#aaa';
+      empty.textContent = '—';
+      list.appendChild(empty);
+    }
+
+    cell.appendChild(top);
+    cell.appendChild(list);
+    calBody.appendChild(cell);
+  }
 }
+
 
 async function handleChooseAppointmentSubmit(event) {
   event.preventDefault();
@@ -83,7 +176,7 @@ async function handleChooseAppointmentSubmit(event) {
   if (selectedOption === 'view-appointments') {
     try {
       const appointments = await loadAppointments();
-      renderAppointments(appointments, resultBox);
+      renderAppointmentsCalendar(appointments, resultBox);
     } catch (err) {
       resultBox.innerHTML = `<h2>Database Error</h2><p>${err?.message || 'Unable to load appointments.'}</p>`;
     }
@@ -101,7 +194,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   if (new URLSearchParams(window.location.search).get('view') === '1' && resultBox) {
     loadAppointments()
-      .then((appointments) => renderAppointments(appointments, resultBox))
+      .then((appointments) => renderAppointmentsCalendar(appointments, resultBox))
       .catch((err) => {
         resultBox.innerHTML = `<h2>Database Error</h2><p>${err?.message || 'Unable to load appointments.'}</p>`;
       });
