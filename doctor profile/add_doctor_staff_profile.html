@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Add Doctor / Staff</title>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    body { font-family: Arial, sans-serif; padding: 16px; }
+    .card { border: 1px solid #ddd; padding: 16px; border-radius: 10px; margin-bottom: 16px; }
+    .row { display: flex; flex-wrap: wrap; gap: 12px; }
+    .field { display: flex; flex-direction: column; gap: 6px; min-width: 220px; }
+    input, select, textarea, button { padding: 8px; }
+    button { cursor: pointer; }
+    .actions { display: flex; gap: 10px; margin-top: 10px; }
+    .result { margin-top: 12px; white-space: pre-wrap; }
+  </style>
+</head>
+<body>
+
+  <h1>Add Doctor / Staff Profile</h1>
+
+  <div class="card">
+    <h2>Choose Action</h2>
+    <div class="actions">
+      <button id="btn-show-doctor" type="button">Add Doctor</button>
+      <button id="btn-show-staff" type="button">Add Staff</button>
+    </div>
+  </div>
+
+  <!-- Doctor Form -->
+  <div class="card" id="doctor-form-card" style="display:none;">
+    <h2>Add Doctor</h2>
+    <form id="doctor-form">
+      <div class="row">
+        <div class="field"><label>First name</label><input name="first_name" required></div>
+        <div class="field"><label>Last name</label><input name="last_name" required></div>
+        <div class="field"><label>Date of birth</label><input name="date_of_birth" type="date" required></div>
+        <div class="field">
+          <label>Gender</label>
+          <select name="gender" required>
+            <option value="" disabled selected>Select Gender</option>
+            <option value="Male">Male</option>
+            <option value="Female">Female</option>
+          </select>
+        </div>
+        <div class="field"><label>Contact number</label><input name="contact_number" required></div>
+        <div class="field"><label>Email</label><input name="email" type="email" required></div>
+        <div class="field"><label>Hire date</label><input name="hire_date" type="date" required></div>
+        <div class="field"><label>Specialization</label><input name="specialization" required></div>
+        <div class="field"><label>License number</label><input name="license_number" type="number" required></div>
+
+      </div>
+
+      <div class="actions">
+        <button type="submit">Save Doctor</button>
+      </div>
+
+      <div id="doctor-form-result" class="result"></div>
+    </form>
+  </div>
+
+  <!-- Staff Form -->
+  <div class="card" id="staff-form-card" style="display:none;">
+    <h2>Add Staff</h2>
+    <form id="staff-form">
+      <div class="row">
+        <div class="field"><label>First name</label><input name="first_name" required></div>
+        <div class="field"><label>Last name</label><input name="last_name" required></div>
+        <div class="field"><label>Date of birth</label><input name="date_of_birth" type="date" required></div>
+        <div class="field">
+          <label>Gender</label>
+          <select name="gender" required>
+            <option value="" disabled selected>Select Gender</option>
+            <option value="Male">Male</option>
+            <option value="Female">Female</option>
+          </select>
+        </div>
+        <div class="field"><label>Contact number</label><input name="contact_number" required></div>
+        <div class="field"><label>Email</label><input name="email" type="email" required></div>
+        <div class="field"><label>Shift schedule</label><input name="shift_schedule" required></div>
+        <div class="field"><label>Hire date</label><input name="hire_date" type="date" required></div>
+      </div>
+
+      <div class="actions">
+        <button type="submit">Save Staff</button>
+      </div>
+
+      <div id="staff-form-result" class="result"></div>
+    </form>
+  </div>
+
+  <script src="add_doctor_staff_profile.js"></script>
+
+</body>
+</html>
+

@@ -9,6 +9,7 @@ const app = express();
 app.use(express.json());
 
 app.use(express.static(__dirname));
+app.use('/doctor-profile', express.static(path.join(__dirname, '..', 'doctor profile')));
 app.use('/appointment', express.static(path.join(__dirname, '..', 'appointment')));
 
 const pool = mysql.createPool({
@@ -243,7 +244,166 @@ app.post('/api/appointments/:id/cancel', async (req, res) => {
   }
 });
 
-async function ensureDbInitialized() {
+function validateGender(gender) {
+  const g = (gender || '').toLowerCase();
+  if (!['male', 'female'].includes(g)) return null;
+  return g;
+}
+
+app.post('/api/staff', async (req, res) => {
+  try {
+    const body = req.body || {};
+
+    const first_name = requireField(body, 'first_name');
+    const last_name = requireField(body, 'last_name');
+    const date_of_birth = requireField(body, 'date_of_birth');
+    const genderRaw = requireField(body, 'gender');
+    const contact_number = requireField(body, 'contact_number');
+    const email = requireField(body, 'email');
+    const shift_schedule = requireField(body, 'shift_schedule');
+    const hire_date = requireField(body, 'hire_date');
+    const employment_status = requireField(body, 'employment_status');
+
+    const gender = validateGender(genderRaw);
+
+    const missing = [];
+    if (!first_name) missing.push('first_name');
+    if (!last_name) missing.push('last_name');
+    if (!date_of_birth) missing.push('date_of_birth');
+    if (!gender) missing.push('gender (male/female)');
+    if (!contact_number) missing.push('contact_number');
+    if (!email) missing.push('email');
+    if (!shift_schedule) missing.push('shift_schedule');
+    if (!hire_date) missing.push('hire_date');
+    if (!employment_status) missing.push('employment_status');
+
+    if (missing.length) {
+      return res.status(400).json({ ok: false, error: `Missing required field(s): ${missing.join(', ')}` });
+    }
+
+    const [result] = await pool.execute(
+      `INSERT INTO staff (
+        first_name,
+        last_name,
+        date_of_birth,
+        gender,
+        contact_number,
+        email,
+        shift_schedule,
+        hire_date,
+        employment_status
+      ) VALUES (
+        :first_name,
+        :last_name,
+        :date_of_birth,
+        :gender,
+        :contact_number,
+        :email,
+        :shift_schedule,
+        :hire_date,
+        :employment_status
+      )`,
+      {
+        first_name,
+        last_name,
+        date_of_birth,
+        gender,
+        contact_number,
+        email,
+        shift_schedule,
+        hire_date,
+        employment_status,
+      }
+    );
+
+    return res.json({ ok: true, staff_id: result.insertId });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ ok: false, error: err?.message ? String(err.message) : 'Database error' });
+  }
+});
+
+app.post('/api/doctors', async (req, res) => {
+  const conn = await pool.getConnection();
+  try {
+    await conn.beginTransaction();
+
+    const body = req.body || {};
+
+    const first_name = requireField(body, 'first_name');
+    const last_name = requireField(body, 'last_name');
+    const date_of_birth = requireField(body, 'date_of_birth');
+    const genderRaw = requireField(body, 'gender');
+    const contact_number = requireField(body, 'contact_number');
+    const email = requireField(body, 'email');
+    const hire_date = requireField(body, 'hire_date');
+    const specialization = requireField(body, 'specialization');
+    const license_number_raw = requireField(body, 'license_number');
+    const license_number = license_number_raw ? Number(license_number_raw) : null;
+
+    const gender = validateGender(genderRaw);
+
+    const missing = [];
+    if (!first_name) missing.push('first_name');
+    if (!last_name) missing.push('last_name');
+    if (!date_of_birth) missing.push('date_of_birth');
+    if (!gender) missing.push('gender (male/female)');
+    if (!contact_number) missing.push('contact_number');
+    if (!email) missing.push('email');
+    if (!hire_date) missing.push('hire_date');
+    if (!specialization) missing.push('specialization');
+    if (!license_number || Number.isNaN(license_number)) missing.push('license_number');
+
+    if (missing.length) {
+      await conn.rollback();
+      return res.status(400).json({ ok: false, error: `Missing required field(s): ${missing.join(', ')}` });
+    }
+    
+    const [dentistResult] = await conn.execute(
+      `INSERT INTO dentist (
+        first_name,
+        last_name,
+        date_of_birth,
+        gender,
+        contact_number,
+        email,
+        specialization,
+        license_number
+      ) VALUES (
+        :first_name,
+        :last_name,
+        :date_of_birth,
+        :gender,
+        :contact_number,
+        :email,
+        :specialization,
+        :license_number
+      )`,
+      {
+        first_name,
+        last_name,
+        date_of_birth,
+        gender,
+        contact_number,
+        email,
+        specialization,
+        license_number,
+      }
+    );
+
+
+    await conn.commit();
+    return res.json({ ok: true, doctor_id: dentistResult.insertId });
+  } catch (err) {
+    try { await conn.rollback(); } catch (_) {}
+    console.error(err);
+    return res.status(500).json({ ok: false, error: err?.message ? String(err.message) : 'Database error' });
+  } finally {
+    conn.release();
+  }
+});
+
+async function ensureDbInitialized() { 
   return new Promise((resolve, reject) => {
     const scriptPath = path.join(__dirname, 'db_init.js');
 
